@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "nestjs-expert": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nestjs-expert/SKILL.md",
+      "computedHash": "f0cd24b963bd7665df75b2b8ebc7828b342112063a45dd8dad11c411fabab306"
+    },
+    "nestjs-patterns": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/nestjs-patterns/SKILL.md",
+      "computedHash": "c76d605454b9c21b11716ead1753667e583e6c30e803982d247748b79a1d0da7"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-app-router-patterns/SKILL.md",
+      "computedHash": "05b3313b2bc29ead0803deadaa7698147298729f7af5d3c140e7b1e29c5dd8b0"
+    },
+    "nextjs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-best-practices/SKILL.md",
+      "computedHash": "3c40a7ea604cdbee772bd7b3efe59aafd6fedf62252a76d43b9f835a6adc92cd"
+    },
+    "react-hook-form": {
+      "source": "midudev/autoskills",
+      "sourceType": "github",
+      "skillPath": "packages/autoskills/skills-registry/react-hook-form/SKILL.md",
+      "computedHash": "4e32884be8612b5ce12dd328812f68970e38ef81d6809a0d59225e84e57b17ea"
+    },
+    "sqlite-expert": {
+      "source": "RightNow-AI/openfang",
+      "sourceType": "github",
+      "skillPath": "crates/openfang-skills/bundled/sqlite-expert/SKILL.md",
+      "computedHash": "daa1e0a26a20a3eabe3067cf4c2fb3576fa6539a4be83d72f3223e434e239509"
+    }
+  }
+}
