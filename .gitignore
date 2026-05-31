@@ -38,3 +38,5 @@ yarn-error.log*
 *.pem
 
 .commands
+task.md
+docs/EXECUTION_PROMPTS.md
