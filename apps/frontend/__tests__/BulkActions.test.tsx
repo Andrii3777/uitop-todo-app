@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect } from 'vitest';
-import BulkActions from '@/components/BulkActions';
+import BulkActions from '@/components/todos/BulkActions';
 
 describe('BulkActions', () => {
   it('renders nothing when selectedCount is 0', () => {

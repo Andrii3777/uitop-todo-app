@@ -1,20 +1,28 @@
 'use client';
-'use client';
 
 import { useState, useCallback, useRef } from 'react';
 import { useTodos } from '@/hooks/useTodos';
 import { useOptimisticRemoval } from '@/hooks/useOptimisticRemoval';
-import api from '@/lib/api';
-import type { Todo } from '@/lib/types';
+import { deleteTodo } from '@/lib/api';
+import type { Todo, Category } from '@/lib/types';
 import CreateTodoForm from './CreateTodoForm';
 import TodoList from './TodoList';
-import CategoryFilter from './CategoryFilter';
-import Spinner from './states/Spinner';
-import ErrorMessage from './states/ErrorMessage';
+import CategoryFilter from '@/components/categories/CategoryFilter';
+import Spinner from '@/components/states/Spinner';
+import ErrorMessage from '@/components/states/ErrorMessage';
 
-export default function TodoApp() {
+interface Props {
+  initialTodos: Todo[];
+  initialCategories: Category[];
+}
+
+export default function TodoApp({ initialTodos, initialCategories }: Props) {
   const pendingIds = useRef<Set<number>>(new Set());
-  const { todos, categories, loading, error, setTodos, fetchByCategory } = useTodos(pendingIds);
+  const { todos, categories, loading, error, setTodos, fetchByCategory } = useTodos(
+    pendingIds,
+    initialTodos,
+    initialCategories
+  );
   const { remove, markDone, undoMarkDone } = useOptimisticRemoval(setTodos, pendingIds);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -34,7 +42,7 @@ export default function TodoApp() {
 
   const handleComplete = useCallback((todo: Todo) => {
     markDone([todo], 'Task completed', async (items) => {
-      await Promise.all(items.map((item) => api.delete(`/todos/${item.id}`)));
+      await Promise.all(items.map((item) => deleteTodo(item.id)));
     });
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -49,7 +57,7 @@ export default function TodoApp() {
 
   const handleDelete = useCallback((todo: Todo) => {
     remove([todo], 'Task deleted', async () => {
-      await api.delete(`/todos/${todo.id}`);
+      await deleteTodo(todo.id);
     });
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -80,7 +88,7 @@ export default function TodoApp() {
     if (selected.length === 0) return;
     const count = selected.length;
     markDone(selected, `${count} task${count === 1 ? '' : 's'} completed`, async (items) => {
-      await Promise.all(items.map((item) => api.delete(`/todos/${item.id}`)));
+      await Promise.all(items.map((item) => deleteTodo(item.id)));
     });
     setSelectedIds(new Set());
   }, [activeTodos, selectedIds, markDone]);

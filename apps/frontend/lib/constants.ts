@@ -1,0 +1,1 @@
+export const TOAST_AUTO_CLOSE_DURATION = 5000;

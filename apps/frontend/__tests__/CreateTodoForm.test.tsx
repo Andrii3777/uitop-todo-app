@@ -1,13 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import CreateTodoForm from '@/components/CreateTodoForm';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import CreateTodoForm from '@/components/todos/CreateTodoForm';
 import type { Category, Todo } from '@/lib/types';
 
 vi.mock('@/lib/api', () => ({
-  default: {
-    post: vi.fn(),
-  },
+  createTodo: vi.fn(),
 }));
 
 vi.mock('react-toastify', () => ({
@@ -17,7 +15,7 @@ vi.mock('react-toastify', () => ({
   }),
 }));
 
-import api from '@/lib/api';
+import { createTodo } from '@/lib/api';
 import { toast } from 'react-toastify';
 
 const categories: Category[] = [
@@ -45,6 +43,10 @@ describe('CreateTodoForm', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders text input, category select, and Add button', () => {
     render(<CreateTodoForm categories={categories} onCreated={asTodoCb(onCreated)} />);
     expect(screen.getByPlaceholderText('New task...')).toBeInTheDocument();
@@ -57,11 +59,11 @@ describe('CreateTodoForm', () => {
     await waitFor(() => {
       expect(screen.getByText('Task text is required')).toBeInTheDocument();
     });
-    expect(api.post).not.toHaveBeenCalled();
+    expect(createTodo).not.toHaveBeenCalled();
   });
 
   it('successful submit calls onCreated and resets the form', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: mockTodo });
+    vi.mocked(createTodo).mockResolvedValueOnce(mockTodo);
     render(<CreateTodoForm categories={categories} onCreated={asTodoCb(onCreated)} />);
 
     await userEvent.type(screen.getByPlaceholderText('New task...'), 'New task');
@@ -78,7 +80,7 @@ describe('CreateTodoForm', () => {
       isAxiosError: true,
       response: { status: 400, data: { message: 'Category is full' } },
     };
-    vi.mocked(api.post).mockRejectedValueOnce(axiosError);
+    vi.mocked(createTodo).mockRejectedValueOnce(axiosError);
 
     const axiosMod = await import('axios');
     vi.spyOn(axiosMod.default, 'isAxiosError').mockReturnValueOnce(true);

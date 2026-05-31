@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect } from 'vitest';
-import CategoryFilter from '@/components/CategoryFilter';
+import CategoryFilter from '@/components/categories/CategoryFilter';
 import type { Category } from '@/lib/types';
 
 const categories: Category[] = [

@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { TOAST_AUTO_CLOSE_DURATION } from '@/lib/constants';
 import type { Todo } from '@/lib/types';
 import React from 'react';
 
@@ -33,7 +34,7 @@ function undoToast(
           'Undo',
         ),
       ),
-    { autoClose: 5000, onClose },
+    { autoClose: TOAST_AUTO_CLOSE_DURATION, onClose },
   );
 }
 

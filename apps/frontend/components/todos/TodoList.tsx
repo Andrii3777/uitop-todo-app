@@ -1,6 +1,6 @@
 import type { Todo } from '@/lib/types';
 import TodoItem from './TodoItem';
-import EmptyState from './states/EmptyState';
+import EmptyState from '@/components/states/EmptyState';
 
 interface Props {
   todos: Todo[];

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import api from '@/lib/api';
+import { getCategories, getTodos } from '@/lib/api';
+import { handleApiError } from '@/lib/apiErrorHandler';
+import { ERROR_MESSAGES } from '@/lib/errorMessages';
 import type { Todo, Category } from '@/lib/types';
 
 interface UseTodosResult {
@@ -16,10 +18,12 @@ interface UseTodosResult {
 
 export function useTodos(
   pendingIds: React.MutableRefObject<Set<number>>,
+  initialTodos: Todo[] = [],
+  initialCategories: Category[] = [],
 ): UseTodosResult {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [todos, setTodos] = useState<Todo[]>(initialTodos);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [loading, setLoading] = useState(initialTodos.length === 0 && initialCategories.length === 0);
   const [error, setError] = useState<string | null>(null);
 
   const fetchByCategory = useCallback(
@@ -27,11 +31,11 @@ export function useTodos(
       setLoading(true);
       setError(null);
       try {
-        const params = categoryId ? { category: categoryId } : {};
-        const res = await api.get<Todo[]>('/todos', { params });
-        setTodos(res.data.filter((t) => !pendingIds.current.has(t.id)));
-      } catch {
-        setError('Failed to load data. Please try again.');
+        const todos = await getTodos(categoryId);
+        setTodos(todos.filter((t) => !pendingIds.current.has(t.id)));
+      } catch (err) {
+        setError(ERROR_MESSAGES.FETCH_FAILED);
+        handleApiError(err);
       } finally {
         setLoading(false);
       }
@@ -43,22 +47,26 @@ export function useTodos(
     setLoading(true);
     setError(null);
     try {
-      const [todosRes, categoriesRes] = await Promise.all([
-        api.get<Todo[]>('/todos'),
-        api.get<Category[]>('/categories'),
+      const [todos, categories] = await Promise.all([
+        getTodos(),
+        getCategories(),
       ]);
-      setTodos(todosRes.data.filter((t) => !pendingIds.current.has(t.id)));
-      setCategories(categoriesRes.data);
-    } catch {
-      setError('Failed to load data. Please try again.');
+      setTodos(todos.filter((t) => !pendingIds.current.has(t.id)));
+      setCategories(categories);
+    } catch (err) {
+      setError(ERROR_MESSAGES.FETCH_FAILED);
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
   }, [pendingIds]);
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    // Only fetch if no initial data was provided
+    if (initialTodos.length === 0 && initialCategories.length === 0) {
+      fetchAll();
+    }
+  }, [fetchAll, initialTodos.length, initialCategories.length]);
 
   return { todos, categories, loading, error, setTodos, refetch: fetchAll, fetchByCategory };
 }
