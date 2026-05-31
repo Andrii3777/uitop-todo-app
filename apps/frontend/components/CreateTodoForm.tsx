@@ -55,7 +55,9 @@ export default function CreateTodoForm({ categories, onCreated }: Props) {
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 400) {
         const message: string =
-          err.response.data?.message ?? 'Invalid request';
+          err.response.data?.errorDetails?.message ?? 
+          err.response.data?.message ?? 
+          'Invalid request';
         toast.error(message);
         setError('text', { message });
       } else {
