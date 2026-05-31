@@ -34,14 +34,14 @@ describe('CategoryFilter', () => {
   it('highlights the selected category', () => {
     render(<CategoryFilter categories={categories} selectedId={2} onChange={() => {}} />);
     const personalBtn = screen.getByText('Personal');
-    expect(personalBtn.className).toContain('bg-blue-600');
+    expect(personalBtn.className).toContain('glass-button-primary');
     const workBtn = screen.getByText('Work');
-    expect(workBtn.className).not.toContain('bg-blue-600');
+    expect(workBtn.className).not.toContain('glass-button-primary');
   });
 
   it('highlights All when selectedId is null', () => {
     render(<CategoryFilter categories={categories} selectedId={null} onChange={() => {}} />);
     const allBtn = screen.getByText('All');
-    expect(allBtn.className).toContain('bg-blue-600');
+    expect(allBtn.className).toContain('glass-button-primary');
   });
 });

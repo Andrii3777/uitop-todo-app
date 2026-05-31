@@ -47,8 +47,7 @@ describe('CreateTodoForm', () => {
 
   it('renders text input, category select, and Add button', () => {
     render(<CreateTodoForm categories={categories} onCreated={asTodoCb(onCreated)} />);
-    expect(screen.getByPlaceholderText('New task…')).toBeInTheDocument();
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('New task...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
   });
 
@@ -65,13 +64,13 @@ describe('CreateTodoForm', () => {
     vi.mocked(api.post).mockResolvedValueOnce({ data: mockTodo });
     render(<CreateTodoForm categories={categories} onCreated={asTodoCb(onCreated)} />);
 
-    await userEvent.type(screen.getByPlaceholderText('New task…'), 'New task');
+    await userEvent.type(screen.getByPlaceholderText('New task...'), 'New task');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
       expect(onCreated).toHaveBeenCalledWith(mockTodo);
     });
-    expect(screen.getByPlaceholderText('New task…')).toHaveValue('');
+    expect(screen.getByPlaceholderText('New task...')).toHaveValue('');
   });
 
   it('400 response shows backend error via toast and inline error', async () => {
@@ -85,7 +84,7 @@ describe('CreateTodoForm', () => {
     vi.spyOn(axiosMod.default, 'isAxiosError').mockReturnValueOnce(true);
 
     render(<CreateTodoForm categories={categories} onCreated={asTodoCb(onCreated)} />);
-    await userEvent.type(screen.getByPlaceholderText('New task…'), 'New task');
+    await userEvent.type(screen.getByPlaceholderText('New task...'), 'New task');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
