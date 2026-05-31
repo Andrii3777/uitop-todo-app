@@ -34,7 +34,7 @@ export default function TodoApp() {
 
   const handleComplete = useCallback((todo: Todo) => {
     markDone([todo], 'Task completed', async (items) => {
-      await Promise.all(items.map((item) => api.patch(`/todos/${item.id}`, { completed: true })));
+      await Promise.all(items.map((item) => api.delete(`/todos/${item.id}`)));
     });
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -80,7 +80,7 @@ export default function TodoApp() {
     if (selected.length === 0) return;
     const count = selected.length;
     markDone(selected, `${count} task${count === 1 ? '' : 's'} completed`, async (items) => {
-      await Promise.all(items.map((item) => api.patch(`/todos/${item.id}`, { completed: true })));
+      await Promise.all(items.map((item) => api.delete(`/todos/${item.id}`)));
     });
     setSelectedIds(new Set());
   }, [activeTodos, selectedIds, markDone]);

@@ -6,12 +6,10 @@ import {
   HttpCode,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
-import { UpdateTodoDto } from './dto/update-todo.dto';
 import { TodoService } from './todo.service';
 
 @Controller('todos')
@@ -29,11 +27,6 @@ export class TodoController {
     categoryId?: number,
   ) {
     return this.todoService.findAll(categoryId);
-  }
-
-  @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTodoDto) {
-    return this.todoService.update(id, dto);
   }
 
   @Delete(':id')

@@ -40,21 +40,6 @@ function undoToast(
 export function useOptimisticRemoval(setTodos: SetTodos, pendingIds: PendingIds) {
   const completionGroups = useRef(new Map<number, PendingCompletionGroup>());
 
-  const revertCompletedItems = useCallback(
-    (items: Todo[]) => {
-      if (items.length === 0) return;
-
-      setTodos((prev) =>
-        prev.map((todo) =>
-          items.some((item) => item.id === todo.id)
-            ? { ...todo, completed: false, pendingAction: undefined }
-            : todo,
-        ),
-      );
-    },
-    [setTodos],
-  );
-
   // Delete: remove from the list immediately; commit (or undo-restore) after 5s.
   const remove = useCallback(
     (items: Todo[], message: string, commitFn: () => Promise<void>) => {
@@ -87,8 +72,7 @@ export function useOptimisticRemoval(setTodos: SetTodos, pendingIds: PendingIds)
     [setTodos, pendingIds],
   );
 
-  // Complete: keep in the list for the 5s undo window, then commit + remove.
-  // Undo cancels - the task stays untouched (no server call).
+  // Complete: mark visually for 5s, then remove + DELETE. Undo keeps as active.
   const markDone = useCallback(
     (items: Todo[], message: string, commitFn: CompleteCommitFn) => {
       setTodos((prev) =>
@@ -118,7 +102,14 @@ export function useOptimisticRemoval(setTodos: SetTodos, pendingIds: PendingIds)
 
         remainingItems.forEach((item) => completionGroups.current.delete(item.id));
         group.items.clear();
-        revertCompletedItems(remainingItems);
+
+        setTodos((prev) =>
+          prev.map((todo) =>
+            remainingItems.some((item) => item.id === todo.id)
+              ? { ...todo, completed: false, pendingAction: undefined }
+              : todo,
+          ),
+        );
 
         if (closeToast) closeToast();
         else if (group.toastId !== null) toast.dismiss(group.toastId);
@@ -146,7 +137,7 @@ export function useOptimisticRemoval(setTodos: SetTodos, pendingIds: PendingIds)
         },
       );
     },
-    [pendingIds, revertCompletedItems, setTodos],
+    [pendingIds, setTodos],
   );
 
   const undoMarkDone = useCallback(
@@ -158,13 +149,20 @@ export function useOptimisticRemoval(setTodos: SetTodos, pendingIds: PendingIds)
 
       group.items.delete(todoId);
       completionGroups.current.delete(todoId);
-      revertCompletedItems([item]);
+
+      setTodos((prev) =>
+        prev.map((todo) =>
+          todo.id === todoId
+            ? { ...todo, completed: false, pendingAction: undefined }
+            : todo,
+        ),
+      );
 
       if (group.items.size === 0 && group.toastId !== null) {
         toast.dismiss(group.toastId);
       }
     },
-    [revertCompletedItems],
+    [setTodos],
   );
 
   return { remove, markDone, undoMarkDone };

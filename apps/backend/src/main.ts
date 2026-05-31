@@ -8,7 +8,6 @@ import { HttpExceptionFilter } from './common/exception-filters/http.exception-f
 import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
-  // mkdir must run before NestFactory (TypeORM connects during create)
   const dbPath = process.env.DATABASE_PATH ?? './data/db.sqlite';
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 

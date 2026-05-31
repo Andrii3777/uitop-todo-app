@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Category } from '../category/category.entity';
 import { CreateTodoDto } from './dto/create-todo.dto';
-import { UpdateTodoDto } from './dto/update-todo.dto';
 import { Todo } from './todo.entity';
 
 const MAX_TODOS_PER_CATEGORY = 5;
@@ -29,12 +28,12 @@ export class TodoService {
         );
       }
 
-      const totalCount = await em.count(Todo, {
-        where: { categoryId: dto.categoryId },
+      const activeCount = await em.count(Todo, {
+        where: { categoryId: dto.categoryId, completed: false },
       });
-      if (totalCount >= MAX_TODOS_PER_CATEGORY) {
+      if (activeCount >= MAX_TODOS_PER_CATEGORY) {
         throw new BadRequestException(
-          `Category ${category.name} already has ${MAX_TODOS_PER_CATEGORY} tasks`,
+          `Category ${category.name} already has ${MAX_TODOS_PER_CATEGORY} active tasks`,
         );
       }
 
@@ -50,15 +49,6 @@ export class TodoService {
   findAll(categoryId?: number): Promise<Todo[]> {
     const where = categoryId !== undefined ? { categoryId } : {};
     return this.todoRepo.find({ where, order: { createdAt: 'ASC' } });
-  }
-
-  async update(id: number, dto: UpdateTodoDto): Promise<Todo> {
-    const todo = await this.todoRepo.findOneBy({ id });
-    if (!todo) {
-      throw new NotFoundException(`Todo ${id} not found`);
-    }
-    todo.completed = dto.completed;
-    return this.todoRepo.save(todo);
   }
 
   async remove(id: number): Promise<void> {
