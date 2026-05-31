@@ -4,51 +4,52 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Category } from '../category/category.entity';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { Todo } from './todo.entity';
+
+const MAX_TODOS_PER_CATEGORY = 5;
 
 @Injectable()
 export class TodoService {
   constructor(
     @InjectRepository(Todo)
     private readonly todoRepo: Repository<Todo>,
-    @InjectRepository(Category)
-    private readonly categoryRepo: Repository<Category>,
-  ) {}
+    private readonly dataSource: DataSource,
+  ) { }
 
   async create(dto: CreateTodoDto): Promise<Todo> {
-    const category = await this.categoryRepo.findOneBy({ id: dto.categoryId });
-    if (!category) {
-      throw new BadRequestException(
-        `Category ${dto.categoryId} does not exist`,
-      );
-    }
+    return this.dataSource.transaction(async (em) => {
+      const category = await em.findOneBy(Category, { id: dto.categoryId });
+      if (!category) {
+        throw new BadRequestException(
+          `Category ${dto.categoryId} does not exist`,
+        );
+      }
 
-    const activeCount = await this.todoRepo.count({
-      where: { categoryId: dto.categoryId, completed: false },
-    });
-    if (activeCount >= 5) {
-      throw new BadRequestException(
-        `Category ${category.name} already has 5 active tasks`,
-      );
-    }
+      const totalCount = await em.count(Todo, {
+        where: { categoryId: dto.categoryId },
+      });
+      if (totalCount >= MAX_TODOS_PER_CATEGORY) {
+        throw new BadRequestException(
+          `Category ${category.name} already has ${MAX_TODOS_PER_CATEGORY} tasks`,
+        );
+      }
 
-    const todo = this.todoRepo.create({
-      text: dto.text,
-      categoryId: dto.categoryId,
+      const todo = em.create(Todo, {
+        text: dto.text,
+        categoryId: dto.categoryId,
+      });
+      const saved = await em.save(todo);
+      return { ...saved, category } as Todo;
     });
-    const saved = await this.todoRepo.save(todo);
-    return this.todoRepo.findOneByOrFail({ id: saved.id });
   }
 
   findAll(categoryId?: number): Promise<Todo[]> {
-    if (categoryId !== undefined) {
-      return this.todoRepo.find({ where: { categoryId } });
-    }
-    return this.todoRepo.find();
+    const where = categoryId !== undefined ? { categoryId } : {};
+    return this.todoRepo.find({ where, order: { createdAt: 'ASC' } });
   }
 
   async update(id: number, dto: UpdateTodoDto): Promise<Todo> {
@@ -61,10 +62,9 @@ export class TodoService {
   }
 
   async remove(id: number): Promise<void> {
-    const todo = await this.todoRepo.findOneBy({ id });
-    if (!todo) {
+    const result = await this.todoRepo.delete(id);
+    if (result.affected === 0) {
       throw new NotFoundException(`Todo ${id} not found`);
     }
-    await this.todoRepo.delete(id);
   }
 }

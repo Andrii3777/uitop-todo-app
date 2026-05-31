@@ -24,9 +24,10 @@ export class TodoController {
   }
 
   @Get()
-  findAll(@Query('category') category?: string) {
-    const categoryId =
-      category !== undefined ? parseInt(category, 10) : undefined;
+  findAll(
+    @Query('category', new ParseIntPipe({ optional: true }))
+    categoryId?: number,
+  ) {
     return this.todoService.findAll(categoryId);
   }
 

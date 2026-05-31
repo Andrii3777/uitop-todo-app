@@ -1,6 +1,8 @@
 import { IsBoolean } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateTodoDto {
+  @ApiProperty({ example: true })
   @IsBoolean()
-  completed: boolean;
+  readonly completed!: boolean;
 }

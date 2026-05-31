@@ -40,3 +40,4 @@ yarn-error.log*
 .commands
 task.md
 docs/EXECUTION_PROMPTS.md
+nestjs-template-project-main/

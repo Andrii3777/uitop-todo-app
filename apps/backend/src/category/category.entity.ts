@@ -4,11 +4,11 @@ import { Todo } from '../todo/todo.entity';
 @Entity()
 export class Category {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ unique: true })
-  name: string;
+  name!: string;
 
   @OneToMany(() => Todo, (todo) => todo.category)
-  todos: Todo[];
+  todos!: Todo[];
 }

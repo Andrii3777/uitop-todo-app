@@ -10,20 +10,20 @@ import { Category } from '../category/category.entity';
 @Entity()
 export class Todo {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  text: string;
+  text!: string;
 
   @Column({ default: false })
-  completed: boolean;
+  completed!: boolean;
 
   @ManyToOne(() => Category, (category) => category.todos, { eager: true })
-  category: Category;
+  category!: Category;
 
   @Column()
-  categoryId: number;
+  categoryId!: number;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

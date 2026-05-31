@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Category } from '../category/category.entity';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
@@ -8,17 +9,14 @@ import { Todo } from './todo.entity';
 import { TodoService } from './todo.service';
 
 const mockTodoRepo = () => ({
-  create: jest.fn(),
-  save: jest.fn(),
   find: jest.fn(),
   findOneBy: jest.fn(),
-  findOneByOrFail: jest.fn(),
-  count: jest.fn(),
+  save: jest.fn(),
   delete: jest.fn(),
 });
 
-const mockCategoryRepo = () => ({
-  findOneBy: jest.fn(),
+const mockDataSource = () => ({
+  transaction: jest.fn(),
 });
 
 const makeCategory = (id = 1, name = 'Work'): Category =>
@@ -35,23 +33,32 @@ const makeTodo = (overrides: Partial<Todo> = {}): Todo =>
     ...overrides,
   }) as Todo;
 
+const makeTxEm = (overrides: Record<string, jest.Mock> = {}) => ({
+  findOneBy: jest.fn(),
+  count: jest.fn(),
+  create: jest.fn(),
+  save: jest.fn(),
+  ...overrides,
+});
+
 describe('TodoService', () => {
   let service: TodoService;
   let todoRepo: jest.Mocked<ReturnType<typeof mockTodoRepo>>;
-  let categoryRepo: jest.Mocked<ReturnType<typeof mockCategoryRepo>>;
+  let dataSource: jest.Mocked<ReturnType<typeof mockDataSource>>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TodoService,
         { provide: getRepositoryToken(Todo), useFactory: mockTodoRepo },
-        { provide: getRepositoryToken(Category), useFactory: mockCategoryRepo },
+        { provide: getRepositoryToken(Category), useFactory: () => ({}) },
+        { provide: DataSource, useFactory: mockDataSource },
       ],
     }).compile();
 
     service = module.get(TodoService);
     todoRepo = module.get(getRepositoryToken(Todo));
-    categoryRepo = module.get(getRepositoryToken(Category));
+    dataSource = module.get(DataSource);
   });
 
   // ── create ───────────────────────────────────────────────
@@ -60,83 +67,103 @@ describe('TodoService', () => {
     const dto: CreateTodoDto = { text: 'Buy milk', categoryId: 1 };
 
     it('persists and returns todo for valid input (R1)', async () => {
-      categoryRepo.findOneBy.mockResolvedValue(makeCategory());
-      todoRepo.count.mockResolvedValue(0);
       const todo = makeTodo();
-      todoRepo.create.mockReturnValue(todo);
-      todoRepo.save.mockResolvedValue(todo);
-      todoRepo.findOneByOrFail.mockResolvedValue(todo);
+      const em = makeTxEm({
+        findOneBy: jest.fn().mockResolvedValue(makeCategory()),
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockReturnValue(todo),
+        save: jest.fn().mockResolvedValue(todo),
+      });
+      dataSource.transaction.mockImplementation(
+        (cb: (em: any) => Promise<any>) => cb(em),
+      );
 
       const result = await service.create(dto);
 
-      expect(categoryRepo.findOneBy).toHaveBeenCalledWith({ id: 1 });
-      expect(todoRepo.count).toHaveBeenCalledWith({
-        where: { categoryId: 1, completed: false },
-      });
-      expect(todoRepo.save).toHaveBeenCalled();
+      expect(em.findOneBy).toHaveBeenCalledWith(Category, { id: 1 });
+      expect(em.count).toHaveBeenCalledWith(Todo, { where: { categoryId: 1 } });
+      expect(em.save).toHaveBeenCalled();
       expect(result).toEqual(todo);
     });
 
     it('throws 400 when category does not exist', async () => {
-      categoryRepo.findOneBy.mockResolvedValue(null);
-
-      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-    });
-
-    it('allows 5th active task in category (R6 boundary)', async () => {
-      categoryRepo.findOneBy.mockResolvedValue(makeCategory());
-      todoRepo.count.mockResolvedValue(4);
-      const todo = makeTodo();
-      todoRepo.create.mockReturnValue(todo);
-      todoRepo.save.mockResolvedValue(todo);
-      todoRepo.findOneByOrFail.mockResolvedValue(todo);
-
-      await expect(service.create(dto)).resolves.toEqual(todo);
-    });
-
-    it('throws 400 when 6th active task in category (R6)', async () => {
-      categoryRepo.findOneBy.mockResolvedValue(makeCategory());
-      todoRepo.count.mockResolvedValue(5);
-
-      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-    });
-
-    it('allows new task when category has 5 completed + 0 active (KTD3)', async () => {
-      categoryRepo.findOneBy.mockResolvedValue(makeCategory());
-      // completed=false count is 0 — completed rows are ignored
-      todoRepo.count.mockResolvedValue(0);
-      const todo = makeTodo();
-      todoRepo.create.mockReturnValue(todo);
-      todoRepo.save.mockResolvedValue(todo);
-      todoRepo.findOneByOrFail.mockResolvedValue(todo);
-
-      await expect(service.create(dto)).resolves.toEqual(todo);
-      expect(todoRepo.count).toHaveBeenCalledWith({
-        where: { categoryId: 1, completed: false },
+      const em = makeTxEm({
+        findOneBy: jest.fn().mockResolvedValue(null),
       });
+      dataSource.transaction.mockImplementation(
+        (cb: (em: any) => Promise<any>) => cb(em),
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('allows 5th task in category (R6 boundary)', async () => {
+      const todo = makeTodo();
+      const em = makeTxEm({
+        findOneBy: jest.fn().mockResolvedValue(makeCategory()),
+        count: jest.fn().mockResolvedValue(4),
+        create: jest.fn().mockReturnValue(todo),
+        save: jest.fn().mockResolvedValue(todo),
+      });
+      dataSource.transaction.mockImplementation(
+        (cb: (em: any) => Promise<any>) => cb(em),
+      );
+
+      await expect(service.create(dto)).resolves.toMatchObject({ id: 1 });
+    });
+
+    it('throws 400 when category already has 5 tasks (R6)', async () => {
+      const em = makeTxEm({
+        findOneBy: jest.fn().mockResolvedValue(makeCategory()),
+        count: jest.fn().mockResolvedValue(5),
+      });
+      dataSource.transaction.mockImplementation(
+        (cb: (em: any) => Promise<any>) => cb(em),
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('counts completed tasks toward limit (all tasks count)', async () => {
+      const em = makeTxEm({
+        findOneBy: jest.fn().mockResolvedValue(makeCategory()),
+        count: jest.fn().mockResolvedValue(5),
+      });
+      dataSource.transaction.mockImplementation(
+        (cb: (em: any) => Promise<any>) => cb(em),
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+      expect(em.count).toHaveBeenCalledWith(Todo, { where: { categoryId: 1 } });
     });
   });
 
   // ── findAll ──────────────────────────────────────────────
 
   describe('findAll', () => {
-    it('returns all todos when no categoryId (R2)', async () => {
+    it('returns all todos sorted by createdAt when no categoryId (R2)', async () => {
       const todos = [makeTodo(), makeTodo({ id: 2 })];
       todoRepo.find.mockResolvedValue(todos);
 
       const result = await service.findAll();
 
-      expect(todoRepo.find).toHaveBeenCalledWith();
+      expect(todoRepo.find).toHaveBeenCalledWith({
+        where: {},
+        order: { createdAt: 'ASC' },
+      });
       expect(result).toEqual(todos);
     });
 
-    it('returns only todos for given category (R5)', async () => {
+    it('returns only todos for given category sorted by createdAt (R5)', async () => {
       const todos = [makeTodo()];
       todoRepo.find.mockResolvedValue(todos);
 
       const result = await service.findAll(1);
 
-      expect(todoRepo.find).toHaveBeenCalledWith({ where: { categoryId: 1 } });
+      expect(todoRepo.find).toHaveBeenCalledWith({
+        where: { categoryId: 1 },
+        order: { createdAt: 'ASC' },
+      });
       expect(result).toEqual(todos);
     });
   });
@@ -181,8 +208,6 @@ describe('TodoService', () => {
 
   describe('remove', () => {
     it('hard-deletes existing todo (R4)', async () => {
-      const todo = makeTodo();
-      todoRepo.findOneBy.mockResolvedValue(todo);
       todoRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
 
       await service.remove(1);
@@ -191,7 +216,7 @@ describe('TodoService', () => {
     });
 
     it('throws 404 for non-existent id', async () => {
-      todoRepo.findOneBy.mockResolvedValue(null);
+      todoRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
 
       await expect(service.remove(99)).rejects.toThrow(NotFoundException);
     });
