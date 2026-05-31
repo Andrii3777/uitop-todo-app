@@ -1,8 +1,13 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  const dbPath = process.env.DATABASE_PATH ?? './data/db.sqlite';
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({

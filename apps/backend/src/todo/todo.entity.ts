@@ -2,7 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -20,7 +19,6 @@ export class Todo {
   completed: boolean;
 
   @ManyToOne(() => Category, (category) => category.todos, { eager: true })
-  @JoinColumn({ name: 'categoryId' })
   category: Category;
 
   @Column()
