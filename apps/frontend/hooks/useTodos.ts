@@ -11,6 +11,7 @@ interface UseTodosResult {
   error: string | null;
   setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
   refetch: () => void;
+  fetchByCategory: (categoryId: number | null) => Promise<void>;
 }
 
 export function useTodos(): UseTodosResult {
@@ -18,6 +19,20 @@ export function useTodos(): UseTodosResult {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchByCategory = useCallback(async (categoryId: number | null) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = categoryId ? { category: categoryId } : {};
+      const res = await api.get<Todo[]>('/todos', { params });
+      setTodos(res.data);
+    } catch {
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -40,5 +55,5 @@ export function useTodos(): UseTodosResult {
     fetchAll();
   }, [fetchAll]);
 
-  return { todos, categories, loading, error, setTodos, refetch: fetchAll };
+  return { todos, categories, loading, error, setTodos, refetch: fetchAll, fetchByCategory };
 }

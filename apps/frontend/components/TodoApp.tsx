@@ -1,32 +1,115 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { useTodos } from '@/hooks/useTodos';
+import { useOptimisticRemoval } from '@/hooks/useOptimisticRemoval';
+import api from '@/lib/api';
 import type { Todo } from '@/lib/types';
 import CreateTodoForm from './CreateTodoForm';
 import TodoList from './TodoList';
+import CategoryFilter from './CategoryFilter';
+import BulkActions from './BulkActions';
 import Spinner from './states/Spinner';
 import ErrorMessage from './states/ErrorMessage';
 
 export default function TodoApp() {
-  const { todos, categories, loading, error, setTodos } = useTodos();
+  const { todos, categories, loading, error, setTodos, fetchByCategory } = useTodos();
+  const { remove } = useOptimisticRemoval(setTodos);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const handleCreated = (todo: Todo) => {
     setTodos((prev) => [todo, ...prev]);
   };
+
+  const handleCategoryChange = async (id: number | null) => {
+    setSelectedCategoryId(id);
+    setSelectedIds(new Set());
+    await fetchByCategory(id);
+  };
+
+  const handleComplete = useCallback((todo: Todo) => {
+    remove([todo], 'Task completed', async () => {
+      await api.patch(`/todos/${todo.id}`, { completed: true });
+    });
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(todo.id);
+      return next;
+    });
+  }, [remove]);
+
+  const handleDelete = useCallback((todo: Todo) => {
+    remove([todo], 'Task deleted', async () => {
+      await api.delete(`/todos/${todo.id}`);
+    });
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(todo.id);
+      return next;
+    });
+  }, [remove]);
+
+  const handleToggleSelect = useCallback((id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const activeTodos = todos.filter((t) => !t.completed);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = activeTodos.map((t) => t.id);
+    const allSelected = allIds.every((id) => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : new Set(allIds));
+  }, [activeTodos, selectedIds]);
+
+  const handleBulkMarkDone = useCallback(() => {
+    const selected = activeTodos.filter((t) => selectedIds.has(t.id));
+    if (selected.length === 0) return;
+    const count = selected.length;
+    remove(selected, `${count} task${count === 1 ? '' : 's'} completed`, async () => {
+      await Promise.all(selected.map((t) => api.patch(`/todos/${t.id}`, { completed: true })));
+    });
+    setSelectedIds(new Set());
+  }, [activeTodos, selectedIds, remove]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold text-gray-900">Todo List</h1>
 
       {categories.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-4 space-y-4">
           <CreateTodoForm categories={categories} onCreated={handleCreated} />
+          <CategoryFilter
+            categories={categories}
+            selectedId={selectedCategoryId}
+            onChange={handleCategoryChange}
+          />
+        </div>
+      )}
+
+      {selectedIds.size > 0 && (
+        <div className="mb-3">
+          <BulkActions selectedCount={selectedIds.size} onMarkDone={handleBulkMarkDone} />
         </div>
       )}
 
       {loading && <Spinner />}
       {!loading && error && <ErrorMessage message={error} />}
-      {!loading && !error && <TodoList todos={todos} />}
+      {!loading && !error && (
+        <TodoList
+          todos={todos}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+          onSelectAll={handleSelectAll}
+          onComplete={handleComplete}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   );
 }
