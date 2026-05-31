@@ -1,5 +1,8 @@
 # compiled output
 /dist
+
+# SQLite database
+/data
 /node_modules
 /build
 
