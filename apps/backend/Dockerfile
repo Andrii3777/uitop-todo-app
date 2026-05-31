@@ -14,7 +14,7 @@ RUN pnpm --filter backend build
 
 # ---- production ----
 FROM node:20-alpine AS production
-RUN apk add --no-cache libstdc++
+RUN apk add --no-cache libstdc++ python3 make g++
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 RUN addgroup -g 1001 -S app && adduser -S app -u 1001 -G app
 
