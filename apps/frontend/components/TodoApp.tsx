@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 import { useState, useCallback, useRef } from 'react';
 import { useTodos } from '@/hooks/useTodos';
@@ -8,7 +9,6 @@ import type { Todo } from '@/lib/types';
 import CreateTodoForm from './CreateTodoForm';
 import TodoList from './TodoList';
 import CategoryFilter from './CategoryFilter';
-import BulkActions from './BulkActions';
 import Spinner from './states/Spinner';
 import ErrorMessage from './states/ErrorMessage';
 
@@ -87,7 +87,9 @@ export default function TodoApp() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Todo List</h1>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] text-center">
+        Todo List
+      </h1>
 
       {categories.length > 0 && (
         <div className="mb-4 space-y-4">
@@ -97,12 +99,6 @@ export default function TodoApp() {
             selectedId={selectedCategoryId}
             onChange={handleCategoryChange}
           />
-        </div>
-      )}
-
-      {selectedIds.size > 0 && (
-        <div className="mb-3">
-          <BulkActions selectedCount={selectedIds.size} onMarkDone={handleBulkMarkDone} />
         </div>
       )}
 
@@ -117,6 +113,7 @@ export default function TodoApp() {
           onComplete={handleComplete}
           onUndoComplete={handleUndoComplete}
           onDelete={handleDelete}
+          onMarkDone={handleBulkMarkDone}
         />
       )}
     </div>

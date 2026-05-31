@@ -22,13 +22,13 @@ function undoToast(
     ({ closeToast }: { closeToast: () => void }) =>
       React.createElement(
         'div',
-        { className: 'flex items-center justify-between gap-4' },
-        React.createElement('span', null, message),
+        { className: 'flex items-center justify-between gap-4 w-full' },
+        React.createElement('span', { className: 'text-sm font-semibold text-white' }, message),
         React.createElement(
           'button',
           {
             onClick: () => onUndo(closeToast),
-            className: 'text-sm font-medium underline',
+            className: 'glass-button-primary rounded-xl px-4 py-1.5 text-xs font-bold text-white transition-all cursor-pointer hover:-translate-y-0.5 hover:scale-105 active:scale-95 shadow-md flex-shrink-0',
           },
           'Undo',
         ),

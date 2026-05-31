@@ -56,7 +56,7 @@ export default function TodoItem({
   return (
     <li
       className={[
-        'todo-item flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-[0_14px_40px_-32px_rgba(15,23,42,0.4)]',
+        'todo-item glass-surface glass-surface--strong flex items-center gap-3 rounded-[28px] px-5 py-4 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.55)] hover:-translate-y-0.5',
         isDeleting ? 'todo-item--deleting' : '',
         isCompleting ? 'todo-item--completing' : '',
       ]
@@ -69,7 +69,7 @@ export default function TodoItem({
         onChange={() => onToggleSelect(todo.id)}
         aria-label="Select task"
         disabled={isBusy || todo.completed}
-        className="h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+        className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400/25 disabled:cursor-not-allowed"
       />
       <button
         type="button"
@@ -77,7 +77,7 @@ export default function TodoItem({
         aria-label={isCompleting ? 'Undo complete task' : 'Complete task'}
         aria-pressed={isCompleting || todo.completed}
         disabled={isDeleting}
-        className="todo-complete-button flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-400 text-transparent transition-all duration-300 hover:border-emerald-500 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        className="todo-complete-button flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 text-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-sm transition-all duration-300 hover:border-emerald-400 hover:bg-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent"
       >
         <svg
           viewBox="0 0 16 16"
@@ -95,8 +95,8 @@ export default function TodoItem({
         </svg>
       </button>
       <div className="relative flex min-w-0 flex-1 items-center gap-3">
-        <span className="todo-text min-w-0 flex-1 text-sm text-gray-900">{todo.text}</span>
-        <span className="todo-badge rounded-full border border-transparent bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+        <span className="todo-text min-w-0 flex-1 text-sm font-medium text-white">{todo.text}</span>
+        <span className="todo-badge glass-chip rounded-full px-2.5 py-1 text-xs text-white/80">
           {todo.category?.name ?? todo.categoryId}
         </span>
         <span aria-hidden="true" className="todo-completion-line" />
@@ -106,7 +106,7 @@ export default function TodoItem({
         onClick={handleDelete}
         aria-label="Delete task"
         disabled={isBusy}
-        className="group inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-all duration-200 hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-0"
+        className="group inline-flex h-9 w-9 items-center justify-center rounded-full text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-0"
       >
         <svg
           viewBox="0 0 24 24"
