@@ -7,6 +7,7 @@ export interface Todo {
   id: number;
   text: string;
   completed: boolean;
+  pendingAction?: 'completing';
   categoryId: number;
   category: Category;
   createdAt: string;

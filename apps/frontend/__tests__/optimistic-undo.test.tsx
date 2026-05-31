@@ -6,7 +6,9 @@ import type { Todo } from '@/lib/types';
 import type React from 'react';
 
 vi.mock('react-toastify', () => ({
-  toast: vi.fn(),
+  toast: Object.assign(vi.fn(() => 'toast-id'), {
+    dismiss: vi.fn(),
+  }),
 }));
 
 import { toast } from 'react-toastify';
@@ -24,20 +26,22 @@ type SetTodos = React.Dispatch<React.SetStateAction<Todo[]>>;
 
 describe('useOptimisticRemoval', () => {
   let setTodos: ReturnType<typeof vi.fn> & SetTodos;
-  let commitFn: () => Promise<void>;
+  let commitFn: (items: Todo[]) => Promise<void>;
+  let pendingIds: React.MutableRefObject<Set<number>>;
 
   beforeEach(() => {
     setTodos = vi.fn() as unknown as ReturnType<typeof vi.fn> & SetTodos;
-    commitFn = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    commitFn = vi.fn<(items: Todo[]) => Promise<void>>().mockResolvedValue(undefined);
+    pendingIds = { current: new Set<number>() };
     vi.clearAllMocks();
   });
 
   it('removes items from state immediately on remove()', () => {
-    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos));
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
     const items = [mockTodo(1)];
 
     act(() => {
-      result.current.remove(items, 'Task completed', commitFn);
+      result.current.remove(items, 'Task completed', async () => commitFn(items));
     });
 
     expect(setTodos).toHaveBeenCalledOnce();
@@ -49,10 +53,10 @@ describe('useOptimisticRemoval', () => {
   });
 
   it('calls toast with autoClose: 5000', () => {
-    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos));
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
 
     act(() => {
-      result.current.remove([mockTodo(1)], 'Task completed', commitFn);
+      result.current.remove([mockTodo(1)], 'Task completed', async () => commitFn([mockTodo(1)]));
     });
 
     expect(toast).toHaveBeenCalledOnce();
@@ -61,10 +65,10 @@ describe('useOptimisticRemoval', () => {
   });
 
   it('calls commitFn when toast closes without Undo', () => {
-    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos));
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
 
     act(() => {
-      result.current.remove([mockTodo(1)], 'Task completed', commitFn);
+      result.current.remove([mockTodo(1)], 'Task completed', async () => commitFn([mockTodo(1)]));
     });
 
     const options = vi.mocked(toast).mock.calls[0]![1] as { onClose: () => void };
@@ -74,11 +78,11 @@ describe('useOptimisticRemoval', () => {
   });
 
   it('does not call commitFn when Undo is clicked before close', async () => {
-    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos));
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
     const items = [mockTodo(1)];
 
     act(() => {
-      result.current.remove(items, 'Task completed', commitFn);
+      result.current.remove(items, 'Task completed', async () => commitFn(items));
     });
 
     const renderProp = vi.mocked(toast).mock.calls[0]![0] as (props: { closeToast: () => void }) => React.ReactElement;
@@ -94,11 +98,11 @@ describe('useOptimisticRemoval', () => {
   });
 
   it('restores items when Undo is clicked', async () => {
-    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos));
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
     const items = [mockTodo(1)];
 
     act(() => {
-      result.current.remove(items, 'Task completed', commitFn);
+      result.current.remove(items, 'Task completed', async () => commitFn(items));
     });
 
     const renderProp = vi.mocked(toast).mock.calls[0]![0] as (props: { closeToast: () => void }) => React.ReactElement;
@@ -116,11 +120,11 @@ describe('useOptimisticRemoval', () => {
   });
 
   it('handles rapid removal of two items independently', () => {
-    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos));
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
 
     act(() => {
-      result.current.remove([mockTodo(1)], 'Task 1 completed', commitFn);
-      result.current.remove([mockTodo(2)], 'Task 2 completed', commitFn);
+      result.current.remove([mockTodo(1)], 'Task 1 completed', async () => commitFn([mockTodo(1)]));
+      result.current.remove([mockTodo(2)], 'Task 2 completed', async () => commitFn([mockTodo(2)]));
     });
 
     expect(toast).toHaveBeenCalledTimes(2);
@@ -135,11 +139,11 @@ describe('useOptimisticRemoval', () => {
   });
 
   it('handles bulk removal — single toast, all items removed, all committed on close', () => {
-    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos));
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
     const items = [mockTodo(1), mockTodo(2), mockTodo(3)];
 
     act(() => {
-      result.current.remove(items, '3 tasks completed', commitFn);
+      result.current.remove(items, '3 tasks completed', async () => commitFn(items));
     });
 
     expect(toast).toHaveBeenCalledOnce();
@@ -153,5 +157,114 @@ describe('useOptimisticRemoval', () => {
     const onClose = (vi.mocked(toast).mock.calls[0]![1] as { onClose: () => void }).onClose;
     act(() => { onClose(); });
     expect(commitFn).toHaveBeenCalledOnce();
+  });
+
+  // ── markDone (complete: stays in list for the 5s window) ──
+
+  it('markDone marks items as completing immediately', () => {
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
+
+    act(() => {
+      result.current.markDone([mockTodo(1)], 'Task completed', commitFn);
+    });
+
+    expect(setTodos).toHaveBeenCalledOnce();
+    const updaterFn = vi.mocked(setTodos).mock.calls[0]![0] as (prev: Todo[]) => Todo[];
+    const next = updaterFn([mockTodo(1), mockTodo(2)]);
+    expect(next[0]).toMatchObject({ id: 1, completed: true, pendingAction: 'completing' });
+    expect(next[1]).toMatchObject({ id: 2, completed: false });
+    expect(toast).toHaveBeenCalledOnce();
+    const options = vi.mocked(toast).mock.calls[0]![1] as { autoClose: number };
+    expect(options.autoClose).toBe(5000);
+  });
+
+  it('markDone commits and removes from state on close without Undo', async () => {
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
+
+    act(() => {
+      result.current.markDone([mockTodo(1)], 'Task completed', commitFn);
+    });
+
+    const onClose = (vi.mocked(toast).mock.calls[0]![1] as { onClose: () => void }).onClose;
+    await act(async () => { onClose(); });
+
+    expect(commitFn).toHaveBeenCalledOnce();
+    expect(commitFn).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })]);
+    expect(setTodos).toHaveBeenCalledTimes(2);
+    const initialUpdater = vi.mocked(setTodos).mock.calls[0]![0] as (prev: Todo[]) => Todo[];
+    const marked = initialUpdater([mockTodo(1), mockTodo(2)]);
+    expect(marked[0]).toMatchObject({ id: 1, completed: true, pendingAction: 'completing' });
+
+    const updaterFn = vi.mocked(setTodos).mock.calls[1]![0] as (prev: Todo[]) => Todo[];
+    const next = updaterFn([mockTodo(1), mockTodo(2)]);
+    expect(next).toHaveLength(1);
+    expect(next[0]!.id).toBe(2);
+  });
+
+  it('markDone reverts the task when Undo is clicked', async () => {
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
+
+    act(() => {
+      result.current.markDone([mockTodo(1)], 'Task completed', commitFn);
+    });
+
+    const renderProp = vi.mocked(toast).mock.calls[0]![0] as (props: { closeToast: () => void }) => React.ReactElement;
+    const closeToast = vi.fn();
+    const { getByText } = render(renderProp({ closeToast }));
+    await userEvent.click(getByText('Undo'));
+
+    const onClose = (vi.mocked(toast).mock.calls[0]![1] as { onClose: () => void }).onClose;
+    act(() => { onClose(); });
+
+    expect(commitFn).not.toHaveBeenCalled();
+    expect(setTodos).toHaveBeenCalledTimes(2);
+    const undoUpdater = vi.mocked(setTodos).mock.calls[1]![0] as (prev: Todo[]) => Todo[];
+    const reverted = undoUpdater([
+      { ...mockTodo(1), completed: true, pendingAction: 'completing' },
+      mockTodo(2),
+    ]);
+    expect(reverted[0]).toMatchObject({ id: 1, completed: false, pendingAction: undefined });
+    expect(closeToast).toHaveBeenCalled();
+  });
+
+  it('undoMarkDone reverts a completing task and dismisses its toast', () => {
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
+
+    act(() => {
+      result.current.markDone([mockTodo(1)], 'Task completed', commitFn);
+    });
+
+    act(() => {
+      result.current.undoMarkDone(1);
+    });
+
+    expect(setTodos).toHaveBeenCalledTimes(2);
+    const undoUpdater = vi.mocked(setTodos).mock.calls[1]![0] as (prev: Todo[]) => Todo[];
+    const reverted = undoUpdater([
+      { ...mockTodo(1), completed: true, pendingAction: 'completing' },
+      mockTodo(2),
+    ]);
+    expect(reverted[0]).toMatchObject({ id: 1, completed: false, pendingAction: undefined });
+    expect(toast.dismiss).toHaveBeenCalledWith('toast-id');
+  });
+
+  it('undoMarkDone removes only one task from a bulk completion commit', async () => {
+    const { result } = renderHook(() => useOptimisticRemoval(setTodos as SetTodos, pendingIds));
+    const first = mockTodo(1);
+    const second = mockTodo(2);
+
+    act(() => {
+      result.current.markDone([first, second], '2 tasks completed', commitFn);
+    });
+
+    act(() => {
+      result.current.undoMarkDone(1);
+    });
+
+    const onClose = (vi.mocked(toast).mock.calls[0]![1] as { onClose: () => void }).onClose;
+    await act(async () => { onClose(); });
+
+    expect(commitFn).toHaveBeenCalledOnce();
+    expect(commitFn).toHaveBeenCalledWith([expect.objectContaining({ id: 2 })]);
   });
 });

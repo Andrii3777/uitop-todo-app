@@ -40,7 +40,8 @@ export class TodoService {
       text: dto.text,
       categoryId: dto.categoryId,
     });
-    return this.todoRepo.save(todo);
+    const saved = await this.todoRepo.save(todo);
+    return this.todoRepo.findOneByOrFail({ id: saved.id });
   }
 
   findAll(categoryId?: number): Promise<Todo[]> {

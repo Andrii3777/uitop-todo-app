@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useTodos } from '@/hooks/useTodos';
 import { useOptimisticRemoval } from '@/hooks/useOptimisticRemoval';
 import api from '@/lib/api';
@@ -13,12 +13,16 @@ import Spinner from './states/Spinner';
 import ErrorMessage from './states/ErrorMessage';
 
 export default function TodoApp() {
-  const { todos, categories, loading, error, setTodos, fetchByCategory } = useTodos();
-  const { remove } = useOptimisticRemoval(setTodos);
+  const pendingIds = useRef<Set<number>>(new Set());
+  const { todos, categories, loading, error, setTodos, fetchByCategory } = useTodos(pendingIds);
+  const { remove, markDone, undoMarkDone } = useOptimisticRemoval(setTodos, pendingIds);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const handleCreated = (todo: Todo) => {
+    if (selectedCategoryId !== null && todo.categoryId !== selectedCategoryId) {
+      return;
+    }
     setTodos((prev) => [todo, ...prev]);
   };
 
@@ -29,15 +33,19 @@ export default function TodoApp() {
   };
 
   const handleComplete = useCallback((todo: Todo) => {
-    remove([todo], 'Task completed', async () => {
-      await api.patch(`/todos/${todo.id}`, { completed: true });
+    markDone([todo], 'Task completed', async (items) => {
+      await Promise.all(items.map((item) => api.patch(`/todos/${item.id}`, { completed: true })));
     });
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.delete(todo.id);
       return next;
     });
-  }, [remove]);
+  }, [markDone]);
+
+  const handleUndoComplete = useCallback((todo: Todo) => {
+    undoMarkDone(todo.id);
+  }, [undoMarkDone]);
 
   const handleDelete = useCallback((todo: Todo) => {
     remove([todo], 'Task deleted', async () => {
@@ -71,11 +79,11 @@ export default function TodoApp() {
     const selected = activeTodos.filter((t) => selectedIds.has(t.id));
     if (selected.length === 0) return;
     const count = selected.length;
-    remove(selected, `${count} task${count === 1 ? '' : 's'} completed`, async () => {
-      await Promise.all(selected.map((t) => api.patch(`/todos/${t.id}`, { completed: true })));
+    markDone(selected, `${count} task${count === 1 ? '' : 's'} completed`, async (items) => {
+      await Promise.all(items.map((item) => api.patch(`/todos/${item.id}`, { completed: true })));
     });
     setSelectedIds(new Set());
-  }, [activeTodos, selectedIds, remove]);
+  }, [activeTodos, selectedIds, markDone]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -107,6 +115,7 @@ export default function TodoApp() {
           onToggleSelect={handleToggleSelect}
           onSelectAll={handleSelectAll}
           onComplete={handleComplete}
+          onUndoComplete={handleUndoComplete}
           onDelete={handleDelete}
         />
       )}

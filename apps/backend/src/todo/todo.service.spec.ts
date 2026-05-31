@@ -12,6 +12,7 @@ const mockTodoRepo = () => ({
   save: jest.fn(),
   find: jest.fn(),
   findOneBy: jest.fn(),
+  findOneByOrFail: jest.fn(),
   count: jest.fn(),
   delete: jest.fn(),
 });
@@ -64,6 +65,7 @@ describe('TodoService', () => {
       const todo = makeTodo();
       todoRepo.create.mockReturnValue(todo);
       todoRepo.save.mockResolvedValue(todo);
+      todoRepo.findOneByOrFail.mockResolvedValue(todo);
 
       const result = await service.create(dto);
 
@@ -87,6 +89,7 @@ describe('TodoService', () => {
       const todo = makeTodo();
       todoRepo.create.mockReturnValue(todo);
       todoRepo.save.mockResolvedValue(todo);
+      todoRepo.findOneByOrFail.mockResolvedValue(todo);
 
       await expect(service.create(dto)).resolves.toEqual(todo);
     });
@@ -105,6 +108,7 @@ describe('TodoService', () => {
       const todo = makeTodo();
       todoRepo.create.mockReturnValue(todo);
       todoRepo.save.mockResolvedValue(todo);
+      todoRepo.findOneByOrFail.mockResolvedValue(todo);
 
       await expect(service.create(dto)).resolves.toEqual(todo);
       expect(todoRepo.count).toHaveBeenCalledWith({

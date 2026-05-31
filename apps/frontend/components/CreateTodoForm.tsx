@@ -44,7 +44,7 @@ export default function CreateTodoForm({ categories, onCreated }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-      <div className="flex gap-2">
+      <div className="flex items-start gap-2">
         <div className="flex-1">
           <input
             {...register('text', { required: 'Task text is required' })}
