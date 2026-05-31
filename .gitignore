@@ -39,5 +39,5 @@ yarn-error.log*
 
 .commands
 task.md
-docs/EXECUTION_PROMPTS.md
+docs/
 nestjs-template-project-main/
