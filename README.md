@@ -1,159 +1,168 @@
-# Turborepo starter
+# Todo App with Categories
 
-This Turborepo starter is maintained by the Turborepo core team.
+Full-stack todo app: NestJS + SQLite backend, Next.js frontend. Turborepo monorepo.
 
-## Using this example
+**Live demo:** _add your Vercel URL here_
+**API:** _add your Railway URL here_
 
-Run the following command:
+---
 
-```sh
-npx create-turbo@latest
-```
+## Features
 
-## What's inside?
+- Create tasks with text and category
+- Mark tasks done (optimistic, 5-second undo)
+- Delete tasks (optimistic, 5-second undo)
+- Filter list by category
+- Bulk select + mark done
+- Max 5 active tasks per category (enforced by API)
+- Loading / error / empty states
 
-This Turborepo includes the following packages/apps:
+---
 
-### Apps and Packages
+## Running Locally
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `frontend`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `frontend` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Prerequisites
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+- Node.js ≥ 18
+- pnpm 9 (`npm install -g pnpm@9`)
 
-### Utilities
+### Setup
 
-This Turborepo has some additional tools already setup for you:
+1. Clone and install:
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+   ```sh
+   git clone <repo-url>
+   cd uitop-todo-app
+   pnpm install
+   ```
 
-### Build
+2. Create `apps/backend/.env` (copy from `.env.example`):
 
-To build all apps and packages, run the following command:
+   ```
+   DATABASE_PATH=./data/db.sqlite
+   FRONTEND_URL=http://localhost:3001
+   PORT=3000
+   ```
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+3. Create `apps/frontend/.env.local` (copy from `.env.local.example`):
 
-```sh
-cd my-turborepo
-turbo build
-```
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:3000
+   ```
 
-Without global `turbo`, use your package manager:
+4. Start both apps:
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
-```
+   ```sh
+   pnpm dev
+   ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+   - Frontend: http://localhost:3001
+   - Backend API: http://localhost:3000
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+### Running Tests
 
 ```sh
-cd my-turborepo
-turbo dev
+# Backend (Jest)
+pnpm --filter backend test
+pnpm --filter backend test:e2e
+
+# Frontend (Vitest + RTL)
+pnpm --filter frontend test
 ```
 
-Without global `turbo`, use your package manager:
+---
+
+## Docker Compose
+
+Runs the full stack with one command. SQLite data persists across restarts via a named volume.
 
 ```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+docker compose up --build
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+- Frontend: http://localhost:3001
+- Backend API: http://localhost:3000
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+To stop and remove containers (data volume is preserved):
 
 ```sh
-turbo dev --filter=frontend
+docker compose down
 ```
 
-Without global `turbo`:
+To also remove the data volume:
 
 ```sh
-npx turbo dev --filter=frontend
-pnpm exec turbo dev --filter=frontend
-pnpm exec turbo dev --filter=frontend
+docker compose down -v
 ```
 
-### Remote Caching
+---
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+## Deployment
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+### Frontend → Vercel
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+1. Import the repo in the [Vercel dashboard](https://vercel.com/new).
+2. Set **Root Directory** to `apps/frontend`.
+3. Add environment variable:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+   | Variable | Value |
+   |---|---|
+   | `NEXT_PUBLIC_API_URL` | `https://<your-railway-backend-url>` |
 
-```sh
-cd my-turborepo
-turbo login
-```
+4. Deploy.
 
-Without global `turbo`, use your package manager:
+### Backend → Railway
 
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
+1. Create a new Railway project and connect the repo.
+2. Set **Root Directory** to `apps/backend`.
+3. Add a **Volume** mounted at `/app/data`.
+4. Add environment variables:
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_PATH` | `/app/data/db.sqlite` |
+   | `FRONTEND_URL` | `https://<your-vercel-frontend-url>` |
+   | `PORT` | `3000` |
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+5. Deploy. Railway auto-detects Node and runs `npm run start:prod` (or set the start command to `node dist/main`).
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+> **Note:** The `better-sqlite3` native module compiles during build. Railway provides the required build tools automatically.
 
-```sh
-turbo link
-```
+### Known Limitations
 
-Without global `turbo`:
+- Completed tasks accumulate in the database over time and are never purged. This is acceptable for this scope.
+- If the browser tab is closed during the 5-second undo window, the pending action is lost (accepted trade-off of the client-optimistic approach).
 
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
+---
 
-## Useful Links
+## Environment Variables Reference
 
-Learn more about the power of Turborepo:
+### Backend (`apps/backend/.env`)
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_PATH` | `./data/db.sqlite` | Path to the SQLite file |
+| `FRONTEND_URL` | `http://localhost:3001` | Allowed CORS origin |
+| `PORT` | `3000` | HTTP port |
+
+### Frontend (`apps/frontend/.env.local`)
+
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | Yes | Base URL of the backend API |
+
+---
+
+## AI Usage
+
+**Did you use AI at any stage while working on this task? Why?**
+
+Yes. I used Claude Code (Anthropic's CLI agent) throughout the entire build. The rationale: this task spans a full stack with several intersecting constraints (NestJS + TypeORM + better-sqlite3, Next.js App Router + React Hook Form + Toastify, optimistic-undo timer logic, RTL + Vitest test setup, Docker multi-stage with native modules). Using AI let me move faster on the mechanical parts (boilerplate, wiring, Docker config) and focus attention on the behavioral logic that actually carries risk (the undo timer race, the 5-task limit, CORS/env wiring for deployment).
+
+**What kind of problems or uncertainties did AI help resolve?**
+
+- **Architectural decisions:** resolving 11 ambiguous forks in the spec before writing any code (e.g., client-optimistic vs server soft-delete, where to count the 5-task limit, how to handle completed rows in the limit check).
+- **Native module Docker build:** `better-sqlite3` requires `python3 make g++` at compile time but not at runtime — AI identified this as risk R-A early and prescribed the multi-stage Dockerfile pattern with `libstdc++` in the production stage.
+- **Timer/Undo race conditions:** the `useOptimisticRemoval` hook is the highest-risk logic (rapid double-actions, unmount cleanup). AI prescribed test-first execution for that unit specifically.
+- **Tooling conflicts:** Next.js 16 + React 19 with RTL required Vitest + jsdom rather than the classic Jest+jsdom path — AI flagged this compatibility gap during dependency planning.
+- **Monorepo Docker wiring:** getting pnpm workspace deps to resolve correctly inside a Docker build context (copy `packages/` before `pnpm install --filter`).
