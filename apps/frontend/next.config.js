@@ -1,13 +1,4 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'standalone',
-  // Required for pnpm monorepo: trace files up to repo root so hoisted node_modules are included
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-};
+const nextConfig = {};
 
 export default nextConfig;

@@ -18,12 +18,17 @@ FROM node:20-alpine AS production
 RUN addgroup -g 1001 -S app && adduser -S app -u 1001 -G app
 
 WORKDIR /app
-COPY --from=builder --chown=app:app /app/apps/frontend/.next/standalone ./
-COPY --from=builder --chown=app:app /app/apps/frontend/.next/static ./apps/frontend/.next/static
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/ ./packages/
+COPY apps/frontend/package.json ./apps/frontend/
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+RUN pnpm install --filter frontend --prod --frozen-lockfile
+
+COPY --from=builder --chown=app:app /app/apps/frontend/.next ./apps/frontend/.next
 COPY --from=builder --chown=app:app /app/apps/frontend/public ./apps/frontend/public
 
 ENV NODE_ENV=production
 ENV PORT=3001
 USER app
 EXPOSE 3001
-CMD ["node", "apps/frontend/server.js"]
+CMD ["node_modules/.bin/next", "start", "--port", "3001"]
