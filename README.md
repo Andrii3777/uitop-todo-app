@@ -363,4 +363,31 @@ curl -X DELETE http://localhost:3000/todos/5
 
 **Did you use AI at any stage while working on this task? Why?**
 
+Yes, absolutely. AI is part of my standard workflow now — I consider it an essential skill, not a nice-to-have.
+
+I use AI throughout the entire development process, but not blindly. My typical workflow is:
+
+1. **Task intake** — I read and understand requirements myself first
+2. **Planning** — AI helps brainstorm architecture decisions (for this project, I used the "grill-me" skill to work through endpoints, DB schema, and potential edge cases)
+3. **Implementation** — AI + me working together
+4. **Code review** — I review manually first, then use AI code-review skills. I find cross-validation between different AI agents most effective (used Codex to double-check Claude Code's output)
+5. **Testing**
+6. **Commit & delivery**
+
+For every project, I start by setting up `CLAUDE.md` with project-specific skills and conventions.
+
 **What kind of problems or uncertainties did AI help resolve?**
+
+For this project specifically:
+
+**I did manually:**
+- Initial project architecture and monorepo setup
+- Most of the backend implementation (NestJS controllers, services, DTOs, endpoints) — I already had templates from previous NestJS projects, so AI involvement here was minimal, mostly just adapting specifics to this task
+
+**AI handled heavily:**
+- Frontend implementation (React components, styling, layouts, CSS)
+- Writing documentation (README, API docs, deployment guides)
+- Docker configuration (Dockerfile, docker-compose)
+- Deployment setup for Vercel and Render
+
+Basically, AI saved me time on repetitive/boilerplate work and documentation, while I focused on architecture decisions and core business logic.
