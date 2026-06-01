@@ -74,6 +74,7 @@ Full-stack todo app: NestJS + SQLite backend, Next.js frontend. Turborepo monore
    ```sh
    git clone <repo-url>
    cd uitop-todo-app
+   git checkout main
    pnpm install
    ```
 
