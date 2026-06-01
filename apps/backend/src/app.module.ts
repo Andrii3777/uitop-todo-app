@@ -18,7 +18,7 @@ import { TodoModule } from './todo/todo.module';
       useFactory: (config: ConfigService) => ({
         type: 'better-sqlite3',
         database: config.get<string>('database.path')!,
-        synchronize: config.get<string>('nodeEnv') !== 'production',
+        synchronize: true,
         autoLoadEntities: true,
       }),
       inject: [ConfigService],
