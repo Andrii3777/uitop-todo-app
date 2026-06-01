@@ -41,3 +41,6 @@ yarn-error.log*
 task.md
 docs/
 nestjs-template-project-main/
+
+AGENTS.md
+.agents/
