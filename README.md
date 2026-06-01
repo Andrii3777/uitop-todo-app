@@ -391,3 +391,23 @@ For this project specifically:
 - Deployment setup for Vercel and Render
 
 Basically, AI saved me time on repetitive/boilerplate work and documentation, while I focused on architecture decisions and core business logic.
+
+---
+
+## Note on Requirements Deviation
+
+**Original requirement:**
+```
+PATCH /todos/:id — update status (completed / not completed)
+```
+
+**Why I deviated:**
+
+According to the business logic, completed tasks are automatically deleted after 5 seconds. There's no need to persist a `completed=true` state in the database since completed tasks don't exist long-term.
+
+Instead, I implemented this logic purely on the frontend:
+- When user marks a task as done, it's visually marked as completed
+- A 5-second undo window is shown
+- If no undo happens, the frontend calls `DELETE /todos/:id` to permanently remove it
+
+This approach is cleaner — no need for a PATCH endpoint or a `completed` boolean in the database when the task will be deleted immediately anyway.
