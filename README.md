@@ -2,7 +2,10 @@
 
 Full-stack todo app: NestJS + SQLite backend, Next.js frontend. Turborepo monorepo.
 
-**Live demo:** _add your Vercel URL here_
+**Live Demo:**
+- **Frontend:** https://uitop-todo-app-frontend.vercel.app
+- **Backend API:** https://uitop-todo-app-backend.onrender.com
+- **API Docs (Swagger):** https://uitop-todo-app-backend.onrender.com/api
 
 ---
 
@@ -313,6 +316,8 @@ curl -X DELETE http://localhost:3000/todos/5
 
 ### Frontend → Vercel
 
+**Live:** https://uitop-todo-app-frontend.vercel.app
+
 1. Import repo in [Vercel dashboard](https://vercel.com/new)
 2. **Root Directory:** `apps/frontend`
 3. Add env:
@@ -323,7 +328,9 @@ curl -X DELETE http://localhost:3000/todos/5
 
 4. Deploy
 
-### Backend → Railway
+### Backend → Railway/Render
+
+**Live:** https://uitop-todo-app-backend.onrender.com
 
 1. Create Railway project, connect repo
 2. **Root Directory:** `apps/backend`
